@@ -8,37 +8,46 @@ model = joblib.load("model_10_features.pkl")
 # Judul aplikasi
 st.title("Prediksi Employee Attrition")
 
-# Upload file CSV
-uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+# Upload file Excel
+uploaded_file = st.file_uploader("Upload Excel", type=["xlsx"])
 
 if uploaded_file is not None:
-    # Baca CSV
-    df = pd.read_csv(uploaded_file)
+    # Baca Excel
+    df = pd.read_excel(uploaded_file)
     st.write("### Data yang Diupload:")
     st.dataframe(df)
 
     # Pastikan hanya memilih fitur yang sesuai dengan model
     selected_features = [
-        "MonthlyIncome", "TotalWorkHours", "DistanceFromHome",
+        "EmployeeID", "TotalWorkHours", "DistanceFromHome",
         "Age", "TotalWorkingYears", "YearsPerPromotion",
-        "PercentSalaryHike", "YearsWithCurrManager",
-        "PerformanceToSatisfactionRatio", "NumCompaniesWorked"
+        "MaritalStatus", "YearsWithCurrManager",
+        "PerformanceToSatisfactionRatio", "NumCompaniesWorked",
+        "TrainingTimesLastYear"
     ]
 
     # Filter data agar sesuai dengan fitur yang dibutuhkan model
-    df_selected = df[selected_features]
+    try:
+        df_selected = df[selected_features]
+        
+        # Pastikan MaritalStatus diubah ke numerik jika perlu
+        if df_selected["MaritalStatus"].dtype == "object":
+            df_selected["MaritalStatus"] = df_selected["MaritalStatus"].astype("category").cat.codes
+        
+        # Prediksi
+        predictions = model.predict(df_selected.drop(columns=["EmployeeID"]))  # Hapus EmployeeID sebelum prediksi
 
-    # Prediksi
-    predictions = model.predict(df_selected)
+        # Tambahkan kolom hasil prediksi ke dataframe
+        df["Attrition_Prediction"] = predictions
 
-    # Tambahkan kolom hasil prediksi ke dataframe
-    df["Attrition_Prediction"] = predictions
+        # Tampilkan hasil prediksi
+        st.write("### Hasil Prediksi:")
+        st.dataframe(df)
 
-    # Tampilkan hasil prediksi
-    st.write("### Hasil Prediksi:")
-    st.dataframe(df)
+        # Download hasil
+        excel_output = df.to_csv(index=False).encode('utf-8')
+        st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
 
-    # Download hasil
-    csv = df.to_csv(index=False)
-    st.download_button("Download Hasil", data=csv, file_name="prediksi_employee.csv", mime="text/csv")
+    except KeyError as e:
+        st.error(f"Kolom yang diperlukan tidak ditemukan: {e}")
 
