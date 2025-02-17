@@ -3,7 +3,7 @@ import pandas as pd
 import joblib
 
 # Load model
-model = joblib.load("model_10_features.pkl")
+model = joblib.load("model_11_features.pkl")
 
 # Judul aplikasi
 st.title("Prediksi Employee Attrition")
