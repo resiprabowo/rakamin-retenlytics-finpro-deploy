@@ -27,12 +27,13 @@ if uploaded_file is not None:
     ]
 
     # Konversi MaritalStatus menjadi one-hot encoding
-    df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
+    if "MaritalStatus" in df.columns:
+        df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
 
-    # Tambahkan kolom dummy jika tidak ada
-    for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
-        if col not in df.columns:
-            df[col] = 0
+        # Tambahkan kolom yang hilang
+        for col in selected_features[10:]:
+            if col not in df.columns:
+                df[col] = 0
 
     # Pastikan semua kolom yang diperlukan ada
     for col in selected_features:
@@ -42,15 +43,6 @@ if uploaded_file is not None:
     # Pisahkan fitur dan hapus EmployeeID sebelum prediksi
     df_selected = df[selected_features].copy()
     df_selected = df_selected.drop(columns=["EmployeeID"])
-
-    # Cek jumlah fitur
-    st.write("Jumlah Fitur di Input:", df_selected.shape[1])
-    st.write("Jumlah Fitur di Model:", model.n_features_in_)
-
-    # Pastikan jumlah fitur sesuai
-    if df_selected.shape[1] != model.n_features_in_:
-        st.error("Jumlah fitur dari model harus cocok dengan input.")
-        st.stop()
 
     # Prediksi
     predictions = model.predict(df_selected)
@@ -65,6 +57,7 @@ if uploaded_file is not None:
     # Download hasil prediksi
     excel_output = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
+
 
 
 
