@@ -23,7 +23,7 @@ if uploaded_file is not None:
         "Age", "TotalWorkingYears", "YearsPerPromotion",
         "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
         "NumCompaniesWorked", "TrainingTimesLastYear",
-        "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
+        "MaritalStatus"
     ]
 
     try:
