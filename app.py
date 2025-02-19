@@ -29,7 +29,7 @@ if uploaded_file is not None:
     try:
         # Validasi Kolom
         missing_cols = [col for col in selected_features if col not in df.columns]
-        
+
         # Cek apakah kolom MaritalStatus ada
         if "MaritalStatus" in df.columns:
             # Konversi MaritalStatus menjadi one-hot encoding
@@ -55,6 +55,27 @@ if uploaded_file is not None:
         df_selected = df[selected_features].copy()
         df_selected = df_selected.drop(columns=["EmployeeID"])
 
+        # Pastikan urutan dan nama fitur konsisten
+        expected_columns = [
+            "TotalWorkHours", "DistanceFromHome", "Age", "TotalWorkingYears",
+            "YearsPerPromotion", "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
+            "NumCompaniesWorked", "TrainingTimesLastYear",
+            "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
+        ]
+
+        # Tambahkan kolom yang hilang dengan nilai 0
+        for col in expected_columns:
+            if col not in df_selected.columns:
+                df_selected[col] = 0
+
+        # Susun ulang sesuai urutan yang diharapkan
+        df_selected = df_selected[expected_columns]
+
+        # Debugging: Cek apakah kolom sudah sesuai
+        st.write("Kolom di DataFrame Setelah Penyesuaian:", df_selected.columns.tolist())
+        st.write("Jumlah Fitur di Input:", df_selected.shape[1])
+        st.write("Jumlah Fitur di Model:", model.n_features_in_)
+
         # Prediksi
         predictions = model.predict(df_selected)
 
@@ -71,5 +92,7 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Terjadi kesalahan: {e}")
+
+
 
 
