@@ -27,43 +27,46 @@ if uploaded_file is not None:
     ]
 
     try:
-        # Cek apakah semua kolom tersedia dalam file yang di-upload
+        # Cek apakah semua kolom yang dibutuhkan tersedia
+        missing_cols = [col for col in selected_features if col not in df.columns]
+
+        # Tangkap jika kolom marital status belum di-encode
+        if "MaritalStatus" in df.columns and any(col not in df.columns for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]):
+            df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
+
+        # Pastikan semua kategori hasil encoding tersedia
+        for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
+            if col not in df.columns:
+                df[col] = 0
+
+        # Validasi ulang setelah encoding
         missing_cols = [col for col in selected_features if col not in df.columns]
         if missing_cols:
             st.error(f"Kolom berikut tidak ditemukan dalam file: {missing_cols}")
-        else:
-            # Pilih hanya kolom yang dibutuhkan
-            df_selected = df[selected_features].copy()
+            st.stop()
 
-            # Pastikan MaritalStatus dikonversi menjadi one-hot encoding jika masih dalam bentuk teks
-            if "MaritalStatus" in df.columns and df["MaritalStatus"].dtype == "object":
-                df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
+        # Pilih kolom sesuai model (TANPA menghapus EmployeeID)
+        df_selected = df[selected_features].copy()
 
-                # Pastikan semua kategori tersedia setelah encoding
-                for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
-                    if col not in df:
-                        df[col] = 0  # Tambahkan kolom yang hilang dengan nilai 0
+        # Prediksi (gunakan semua fitur kecuali EmployeeID)
+        X_for_prediction = df_selected.drop(columns=["EmployeeID"])
+        predictions = model.predict(X_for_prediction)
 
-                # Update df_selected setelah encoding
-                df_selected = df[selected_features]
+        # Tambahkan hasil prediksi
+        df["Attrition_Prediction"] = predictions
 
-            # Hapus EmployeeID sebelum prediksi
-            df_selected = df_selected.drop(columns=["EmployeeID"])
+        # Tampilkan hasil prediksi
+        st.write("### Hasil Prediksi:")
+        st.dataframe(df)
 
-            # Prediksi
-            predictions = model.predict(df_selected)
+        # Siapkan hasil prediksi untuk diunduh dalam format Excel
+        excel_output = pd.ExcelWriter("hasil_prediksi.xlsx", engine="xlsxwriter")
+        df.to_excel(excel_output, index=False, sheet_name="Prediksi")
+        excel_output.close()
 
-            # Tambahkan hasil prediksi ke dataframe asli
-            df["Attrition_Prediction"] = predictions
+        with open("hasil_prediksi.xlsx", "rb") as f:
+            st.download_button("Download Hasil", f, file_name="prediksi_employee.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-            # Tampilkan hasil prediksi
-            st.write("### Hasil Prediksi:")
-            st.dataframe(df)
-
-            # Download hasil prediksi
-            excel_output = df.to_csv(index=False).encode("utf-8")
-            st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
-
-    except KeyError as e:
-        st.error(f"Terjadi kesalahan saat memproses data: {e}")
+    except Exception as e:
+        st.error(f"Terjadi kesalahan: {e}")
 
