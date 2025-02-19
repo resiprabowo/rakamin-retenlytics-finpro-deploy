@@ -55,13 +55,13 @@ if uploaded_file is not None:
         df_selected = df[selected_features].copy()
         df_selected = df_selected.drop(columns=["EmployeeID"])
 
-        # Pastikan urutan dan nama fitur konsisten
+        # Susun ulang sesuai urutan yang diharapkan
         expected_columns = [
-            "EmployeeID", "TotalWorkHours", "DistanceFromHome",
-        "Age", "TotalWorkingYears", "YearsPerPromotion",
-        "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
-        "NumCompaniesWorked", "TrainingTimesLastYear",
-        "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
+            "TotalWorkHours", "DistanceFromHome", "Age",
+            "TotalWorkingYears", "YearsPerPromotion",
+            "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
+            "NumCompaniesWorked", "TrainingTimesLastYear",
+            "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
         ]
 
         # Tambahkan kolom yang hilang dengan nilai 0
@@ -93,6 +93,7 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Terjadi kesalahan: {e}")
+
 
 
 
