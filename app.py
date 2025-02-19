@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+from io import BytesIO
 
 # Load model
 model = joblib.load("model_12_features.pkl")
@@ -14,72 +15,57 @@ uploaded_file = st.file_uploader("Upload Excel", type=["xlsx"])
 if uploaded_file is not None:
     # Baca Excel
     df = pd.read_excel(uploaded_file)
-    st.write("### Data yang Diupload:")
+
+    # Tampilkan data yang diunggah
+    st.write("### Data yang Diunggah:")
     st.dataframe(df)
 
-    # Fitur yang diperlukan model
-    selected_features = [
-        "TotalWorkHours", "DistanceFromHome", "Age",
-        "TotalWorkingYears", "YearsPerPromotion", "YearsWithCurrManager",
-        "PerformanceToSatisfactionRatio", "NumCompaniesWorked", "TrainingTimesLastYear",
-        "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
-    ]
+    # Konversi tipe data kolom PerformanceToSatisfactionRatio
+    try:
+        df['PerformanceToSatisfactionRatio'] = pd.to_numeric(df['PerformanceToSatisfactionRatio'], errors='raise')
+    except ValueError:
+        st.error("Kolom PerformanceToSatisfactionRatio mengandung nilai yang tidak valid.")
+        st.stop()
 
-    # Cek apakah kolom MaritalStatus ada
-    if "MaritalStatus" in df.columns:
-        # Konversi MaritalStatus menjadi one-hot encoding
-        df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
+    # One-hot encoding untuk MaritalStatus
+    df = pd.get_dummies(df, columns=['MaritalStatus'], drop_first=True)
 
-        # Tambahkan kolom MaritalStatus yang hilang jika tidak ada
-        for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
-            if col not in df.columns:
-                df[col] = 0  # Tambahkan kolom dengan nilai 0
+    # Pastikan semua kolom yang dibutuhkan ada
+    required_columns = ['TotalWorkHours', 'DistanceFromHome', 'Age', 'TotalWorkingYears',
+                        'YearsPerPromotion', 'YearsWithCurrManager', 'PerformanceToSatisfactionRatio',
+                        'NumCompaniesWorked', 'TrainingTimesLastYear', 'MaritalStatus_Married',
+                        'MaritalStatus_Single']  # Kolom one-hot encoding
 
-    # Pastikan semua kolom yang diperlukan ada
-    for col in selected_features:
-        if col not in df.columns:
-            df[col] = 0
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        st.error(f"Kolom berikut tidak ditemukan dalam data Anda: {', '.join(missing_columns)}")
+        st.stop()
 
-    # Pisahkan fitur
-    df_selected = df[selected_features].copy()
+    # Pilih kolom yang sesuai untuk prediksi
+    df_selected = df[required_columns]
 
-    # Periksa tipe data
-    st.write("### Tipe Data Kolom:")
-    st.write(df_selected.dtypes)
-
-    # Konversi ke numerik dan tangani kesalahan
-    for col in df_selected.columns:
-        df_selected[col] = pd.to_numeric(df_selected[col], errors='coerce')
-
-    # Tangani nilai yang hilang (NaN)
-    st.write("### Jumlah Nilai NaN Sebelum Penanganan:")
-    st.write(df_selected.isnull().sum())
-    df_selected.fillna(df_selected.mean(), inplace=True)
-    st.write("### Jumlah Nilai NaN Setelah Penanganan:")
-    st.write(df_selected.isnull().sum())
-
-    # Periksa dimensi DataFrame
-    st.write("### Dimensi DataFrame:")
-    st.write(df_selected.shape)
-
-    # Prediksi
+    # Lakukan prediksi
     try:
         predictions = model.predict(df_selected)
-
-        # Tambahkan hasil prediksi
-        df["Attrition_Prediction"] = predictions
-
-        # Tampilkan hasil
+        df['Attrition_Prediction'] = predictions
         st.write("### Hasil Prediksi:")
         st.dataframe(df)
 
-        # Download hasil prediksi
-        excel_output = df.to_csv(index=False).encode("utf-8")
-        st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
+        # Tombol Download
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='predictions', index=False)
+        processed_data = output.getvalue()
+
+        st.download_button(
+            label="Download Hasil",
+            data=processed_data,
+            file_name='predictions.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
 
     except Exception as e:
         st.error(f"Terjadi kesalahan saat melakukan prediksi: {e}")
-
 
 
 
