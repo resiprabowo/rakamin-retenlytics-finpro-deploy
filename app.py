@@ -17,22 +17,49 @@ if uploaded_file is not None:
     st.write("### Data yang Diupload:")
     st.dataframe(df)
 
-    # Pastikan kolom yang diperlukan ada
-    required_columns = [
-        "EmployeeID", "TotalWorkHours", "DistanceFromHome", "Age",
-        "TotalWorkingYears", "YearsPerPromotion", "YearsWithCurrManager",
-        "PerformanceToSatisfactionRatio", "NumCompaniesWorked", "TrainingTimesLastYear",
+    # Fitur yang diperlukan model
+    selected_features = [
+        "EmployeeID", "TotalWorkHours", "DistanceFromHome",
+        "Age", "TotalWorkingYears", "YearsPerPromotion",
+        "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
+        "NumCompaniesWorked", "TrainingTimesLastYear",
         "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
     ]
 
-    # Tambahkan kolom yang hilang
-    for col in required_columns:
+    # Konversi MaritalStatus menjadi one-hot encoding
+    if "MaritalStatus" in df.columns:
+        df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
+
+    # Tambahkan kolom dummy jika tidak ada
+    for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
+        if col not in df.columns:
+            df[col] = 0
+
+    # Pastikan semua kolom yang diperlukan ada
+    for col in selected_features:
         if col not in df.columns:
             df[col] = 0
 
     # Pisahkan fitur dan hapus EmployeeID sebelum prediksi
-    df_selected = df[required_columns].copy()
+    df_selected = df[selected_features].copy()
     df_selected = df_selected.drop(columns=["EmployeeID"])
+
+    # Pastikan urutan dan nama fitur konsisten
+    expected_columns = [
+        "TotalWorkHours", "DistanceFromHome", "Age",
+        "TotalWorkingYears", "YearsPerPromotion",
+        "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
+        "NumCompaniesWorked", "TrainingTimesLastYear",
+        "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
+    ]
+
+    # Tambahkan kolom yang hilang dengan nilai 0
+    for col in expected_columns:
+        if col not in df_selected.columns:
+            df_selected[col] = 0
+
+    # Susun ulang sesuai urutan yang diharapkan
+    df_selected = df_selected[expected_columns]
 
     # Prediksi
     predictions = model.predict(df_selected)
@@ -47,6 +74,7 @@ if uploaded_file is not None:
     # Download hasil prediksi
     excel_output = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
+
 
 
 
