@@ -27,8 +27,7 @@ if uploaded_file is not None:
     ]
 
     # Konversi MaritalStatus menjadi one-hot encoding
-    if "MaritalStatus" in df.columns:
-        df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
+    df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
 
     # Tambahkan kolom dummy jika tidak ada
     for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
@@ -44,22 +43,14 @@ if uploaded_file is not None:
     df_selected = df[selected_features].copy()
     df_selected = df_selected.drop(columns=["EmployeeID"])
 
-    # Pastikan urutan dan nama fitur konsisten
-    expected_columns = [
-        "TotalWorkHours", "DistanceFromHome", "Age",
-        "TotalWorkingYears", "YearsPerPromotion",
-        "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
-        "NumCompaniesWorked", "TrainingTimesLastYear",
-        "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
-    ]
+    # Cek jumlah fitur
+    st.write("Jumlah Fitur di Input:", df_selected.shape[1])
+    st.write("Jumlah Fitur di Model:", model.n_features_in_)
 
-    # Tambahkan kolom yang hilang dengan nilai 0
-    for col in expected_columns:
-        if col not in df_selected.columns:
-            df_selected[col] = 0
-
-    # Susun ulang sesuai urutan yang diharapkan
-    df_selected = df_selected[expected_columns]
+    # Pastikan jumlah fitur sesuai
+    if df_selected.shape[1] != model.n_features_in_:
+        st.error("Jumlah fitur dari model harus cocok dengan input.")
+        st.stop()
 
     # Prediksi
     predictions = model.predict(df_selected)
@@ -74,6 +65,7 @@ if uploaded_file is not None:
     # Download hasil prediksi
     excel_output = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
+
 
 
 
