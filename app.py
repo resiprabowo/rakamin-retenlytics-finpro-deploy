@@ -57,10 +57,11 @@ if uploaded_file is not None:
 
         # Pastikan urutan dan nama fitur konsisten
         expected_columns = [
-            "TotalWorkHours", "DistanceFromHome", "Age", "TotalWorkingYears",
-            "YearsPerPromotion", "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
-            "NumCompaniesWorked", "TrainingTimesLastYear",
-            "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
+            "EmployeeID", "TotalWorkHours", "DistanceFromHome",
+        "Age", "TotalWorkingYears", "YearsPerPromotion",
+        "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
+        "NumCompaniesWorked", "TrainingTimesLastYear",
+        "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
         ]
 
         # Tambahkan kolom yang hilang dengan nilai 0
