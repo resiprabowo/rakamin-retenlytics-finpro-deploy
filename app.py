@@ -18,34 +18,31 @@ if uploaded_file is not None:
     st.dataframe(df)
 
     # Fitur yang diperlukan model
-    selected_features = [
-        "EmployeeID", "TotalWorkHours", "DistanceFromHome",
-        "Age", "TotalWorkingYears", "YearsPerPromotion",
-        "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
-        "NumCompaniesWorked", "TrainingTimesLastYear",
+    final_features = [
+        "EmployeeID", "TotalWorkHours", "DistanceFromHome", "Age",
+        "TotalWorkingYears", "YearsPerPromotion", "YearsWithCurrManager",
+        "PerformanceToSatisfactionRatio", "NumCompaniesWorked", "TrainingTimesLastYear",
         "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
     ]
 
-    # Konversi MaritalStatus menjadi one-hot encoding
+    # Cek apakah kolom MaritalStatus ada
     if "MaritalStatus" in df.columns:
+        # Konversi MaritalStatus menjadi one-hot encoding
         df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
 
-        # Tambahkan kolom yang hilang
-        for col in selected_features[10:]:
+        # Tambahkan kolom MaritalStatus yang hilang jika tidak ada
+        for col in final_features[10:]:  # Kolom MaritalStatus
             if col not in df.columns:
-                df[col] = 0
+                df[col] = 0  # Tambahkan kolom dengan nilai 0
 
     # Pastikan semua kolom yang diperlukan ada
-    for col in selected_features:
+    for col in final_features:
         if col not in df.columns:
             df[col] = 0
 
     # Pisahkan fitur dan hapus EmployeeID sebelum prediksi
-    df_selected = df[selected_features].copy()
+    df_selected = df[final_features].copy()
     df_selected = df_selected.drop(columns=["EmployeeID"])
-
-    # Hapus EmployeeID sebelum prediksi
-    df_selected = df[final_features].copy()  # Gunakan final_features dari kode pelatihan
 
     # Prediksi
     predictions = model.predict(df_selected)
