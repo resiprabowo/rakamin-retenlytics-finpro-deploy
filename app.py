@@ -44,6 +44,9 @@ if uploaded_file is not None:
     df_selected = df[selected_features].copy()
     df_selected = df_selected.drop(columns=["EmployeeID"])
 
+    # Hapus EmployeeID sebelum prediksi
+    df_selected = df[final_features].copy()  # Gunakan final_features dari kode pelatihan
+
     # Prediksi
     predictions = model.predict(df_selected)
 
