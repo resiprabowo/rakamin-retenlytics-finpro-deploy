@@ -23,40 +23,32 @@ if uploaded_file is not None:
         "Age", "TotalWorkingYears", "YearsPerPromotion",
         "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
         "NumCompaniesWorked", "TrainingTimesLastYear",
-        "MaritalStatus"
-    ]
-
-    # Validasi Kolom
-    missing_cols = [col for col in selected_features if col not in df.columns]
-    if missing_cols:
-        st.error(f"Kolom berikut tidak ditemukan: {missing_cols}")
-        st.stop()
-
-    # Konversi MaritalStatus menjadi one-hot encoding
-    df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
-
-    # Tambahkan kolom dummy jika tidak ada
-    all_marital_statuses = ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]
-    for status in all_marital_statuses:
-        if status not in df.columns:
-            df[status] = 0  # Tambahkan kolom dengan nilai 0
-
-    # Pastikan semua kolom yang diperlukan ada
-    final_features = [
-        "EmployeeID", "TotalWorkHours", "DistanceFromHome", "Age",
-        "TotalWorkingYears", "YearsPerPromotion", "YearsWithCurrManager",
-        "PerformanceToSatisfactionRatio", "NumCompaniesWorked", "TrainingTimesLastYear",
         "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
     ]
 
-    # Tambahkan kolom yang hilang dengan nilai 0
-    for col in final_features:
+    # Cek apakah kolom MaritalStatus ada
+    if "MaritalStatus" in df.columns:
+        # Konversi MaritalStatus menjadi one-hot encoding
+        df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
+
+        # Tambahkan kolom MaritalStatus yang hilang jika tidak ada
+        for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
+            if col not in df.columns:
+                df[col] = 0  # Tambahkan kolom dengan nilai 0
+
+    # Pastikan semua kolom yang diperlukan ada
+    for col in selected_features:
         if col not in df.columns:
             df[col] = 0
 
     # Pisahkan fitur dan hapus EmployeeID sebelum prediksi
-    df_selected = df[final_features].copy()
+    df_selected = df[selected_features].copy()
     df_selected = df_selected.drop(columns=["EmployeeID"])
+
+    # Debugging: Cek apakah kolom sudah sesuai
+    st.write("Kolom di DataFrame Setelah Penyesuaian:", df_selected.columns.tolist())
+    st.write("Jumlah Fitur di Input:", df_selected.shape[1])
+    st.write("Jumlah Fitur di Model:", model.n_features_in_)
 
     # Prediksi
     predictions = model.predict(df_selected)
