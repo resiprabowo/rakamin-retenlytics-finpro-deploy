@@ -15,47 +15,70 @@ if uploaded_file is not None:
     # Baca Excel
     df = pd.read_excel(uploaded_file)
 
-    # Cek dan konversi tipe data untuk PerformanceToSatisfactionRatio
-    if df['PerformanceToSatisfactionRatio'].dtype == 'object':
-        df['PerformanceToSatisfactionRatio'] = pd.to_numeric(df['PerformanceToSatisfactionRatio'], errors='coerce')
+    # Bersihkan dan konversi kolom PerformanceToSatisfactionRatio
+    df['PerformanceToSatisfactionRatio'] = pd.to_numeric(df['PerformanceToSatisfactionRatio'], errors='coerce')
+    df.dropna(subset=['PerformanceToSatisfactionRatio'], inplace=True)  # Hapus baris dengan nilai NaN
+    df['PerformanceToSatisfactionRatio'] = df['PerformanceToSatisfactionRatio'].astype(float)  # Pastikan tipe data float
 
-    # Cek apakah ada nilai NaN setelah konversi
-    if df['PerformanceToSatisfactionRatio'].isnull().any():
-        st.error("Kolom PerformanceToSatisfactionRatio mengandung nilai yang tidak valid.")
-    else:
+    # Tampilkan data yang diupload
+    st.write("### Data yang Diupload:")
+    st.dataframe(df)
+
+    # Fitur yang diperlukan model
+    selected_features = [
+        "EmployeeID",
+        "TotalWorkHours",
+        "DistanceFromHome",
+        "Age",
+        "TotalWorkingYears",
+        "YearsPerPromotion",
+        "YearsWithCurrManager",
+        "PerformanceToSatisfactionRatio",
+        "NumCompaniesWorked",
+        "TrainingTimesLastYear",
+        "MaritalStatus_Divorced",
+        "MaritalStatus_Married",
+        "MaritalStatus_Single"
+    ]
+
+    # Cek apakah kolom MaritalStatus ada
+    if "MaritalStatus" in df.columns:
         # Konversi MaritalStatus menjadi one-hot encoding
-        df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=True)
+        df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
 
-        # Pastikan semua kolom yang diperlukan ada
-        required_columns = [
-            "EmployeeID", "TotalWorkHours", "DistanceFromHome", "Age",
-            "TotalWorkingYears", "YearsPerPromotion", "YearsWithCurrManager",
-            "PerformanceToSatisfactionRatio", "NumCompaniesWorked",
-            "TrainingTimesLastYear", "MaritalStatus_Married", "MaritalStatus_Single"
-        ]
-
-        for col in required_columns:
+        # Tambahkan kolom MaritalStatus yang hilang jika tidak ada
+        for col in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
             if col not in df.columns:
-                st.error(f"Kolom {col} tidak ditemukan dalam data.")
-                break
-        else:
-            # Pisahkan fitur dan hapus EmployeeID sebelum prediksi
-            df_selected = df[required_columns].copy()
-            df_selected = df_selected.drop(columns=["EmployeeID"])
+                df[col] = 0  # Tambahkan kolom dengan nilai 0
 
-            # Prediksi
-            predictions = model.predict(df_selected)
+    # Pastikan semua kolom yang diperlukan ada
+    for col in selected_features:
+        if col not in df.columns:
+            df[col] = 0
 
-            # Tambahkan hasil prediksi ke DataFrame
-            df["Attrition_Prediction"] = predictions
+    # Pisahkan fitur dan hapus EmployeeID sebelum prediksi
+    df_selected = df[selected_features].copy()
+    df_selected = df_selected.drop(columns=["EmployeeID"])
 
-            # Tampilkan hasil
-            st.write("### Hasil Prediksi:")
-            st.dataframe(df)
+    # Debugging: Cek apakah kolom sudah sesuai
+    st.write("Kolom di DataFrame Setelah Penyesuaian:", df_selected.columns.tolist())
+    st.write("Jumlah Fitur di Input:", df_selected.shape[1])
+    st.write("Jumlah Fitur di Model:", model.n_features_in_)
 
-            # Download hasil prediksi
-            excel_output = df.to_csv(index=False).encode("utf-8")
-            st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
+    # Prediksi
+    predictions = model.predict(df_selected)
+
+    # Tambahkan hasil prediksi
+    df["Attrition_Prediction"] = predictions
+
+    # Tampilkan hasil
+    st.write("### Hasil Prediksi:")
+    st.dataframe(df)
+
+    # Download hasil prediksi
+    excel_output = df.to_csv(index=False).encode("utf-8")
+    st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
+
 
 
 
