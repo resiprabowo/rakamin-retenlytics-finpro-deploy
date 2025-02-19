@@ -16,56 +16,58 @@ if uploaded_file is not None:
     # Baca Excel
     df = pd.read_excel(uploaded_file)
 
-    # Tampilkan data yang diunggah
-    st.write("### Data yang Diunggah:")
-    st.dataframe(df)
+    # Konversi tipe data
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            try:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            except ValueError:
+                st.error(f"Kolom {col} mengandung nilai yang tidak valid.")
+                st.stop()
 
-    # Konversi tipe data kolom PerformanceToSatisfactionRatio
-    try:
-        df['PerformanceToSatisfactionRatio'] = pd.to_numeric(df['PerformanceToSatisfactionRatio'], errors='raise')
-    except ValueError:
-        st.error("Kolom PerformanceToSatisfactionRatio mengandung nilai yang tidak valid.")
-        st.stop()
+    # Isi nilai NaN
+    df = df.fillna(df.mean(numeric_only=True))
 
     # One-hot encoding untuk MaritalStatus
-    df = pd.get_dummies(df, columns=['MaritalStatus'], drop_first=True)
+    df = pd.get_dummies(df, columns=['MaritalStatus'], drop_first=False)
 
-    # Pastikan semua kolom yang dibutuhkan ada
-    required_columns = ['TotalWorkHours', 'DistanceFromHome', 'Age', 'TotalWorkingYears',
-                        'YearsPerPromotion', 'YearsWithCurrManager', 'PerformanceToSatisfactionRatio',
-                        'NumCompaniesWorked', 'TrainingTimesLastYear', 'MaritalStatus_Married',
-                        'MaritalStatus_Single']  # Kolom one-hot encoding
+    # Pastikan semua kolom ada
+    expected_columns = [
+        'TotalWorkHours', 'DistanceFromHome', 'Age', 'TotalWorkingYears',
+        'YearsPerPromotion', 'YearsWithCurrManager', 'PerformanceToSatisfactionRatio',
+        'NumCompaniesWorked', 'TrainingTimesLastYear', 'MaritalStatus_Divorced',
+        'MaritalStatus_Married', 'MaritalStatus_Single'
+    ]
+    for col in expected_columns:
+        if col not in df.columns:
+            df[col] = 0  # Tambahkan kolom jika tidak ada
 
-    missing_columns = [col for col in required_columns if col not in df.columns]
-    if missing_columns:
-        st.error(f"Kolom berikut tidak ditemukan dalam data Anda: {', '.join(missing_columns)}")
-        st.stop()
-
-    # Pilih kolom yang sesuai untuk prediksi
-    df_selected = df[required_columns]
+    # Urutkan kolom sesuai urutan yang diharapkan model
+    df_selected = df[expected_columns]
 
     # Lakukan prediksi
     try:
         predictions = model.predict(df_selected)
         df['Attrition_Prediction'] = predictions
-        st.write("### Hasil Prediksi:")
-        st.dataframe(df)
-
-        # Tombol Download
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, sheet_name='predictions', index=False)
-        processed_data = output.getvalue()
-
-        st.download_button(
-            label="Download Hasil",
-            data=processed_data,
-            file_name='predictions.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-
     except Exception as e:
         st.error(f"Terjadi kesalahan saat melakukan prediksi: {e}")
+        st.stop()
+
+    # Tampilkan hasil prediksi
+    st.write("### Hasil Prediksi:")
+    st.dataframe(df)
+
+    # Tombol download
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='Sheet1', index=False)
+    processed_data = output.getvalue()
+    st.download_button(
+        label="Download Hasil",
+        data=processed_data,
+        file_name="hasil_prediksi.xlsx",
+        mime="application/vnd.ms-excel"
+    )
 
 
 
