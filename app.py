@@ -18,6 +18,30 @@ if uploaded_file is not None:
     st.dataframe(df)
 
     # Fitur yang diperlukan model
+    selected_features = [
+        "EmployeeID", "TotalWorkHours", "DistanceFromHome",
+        "Age", "TotalWorkingYears", "YearsPerPromotion",
+        "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
+        "NumCompaniesWorked", "TrainingTimesLastYear",
+        "MaritalStatus"
+    ]
+
+    # Validasi Kolom
+    missing_cols = [col for col in selected_features if col not in df.columns]
+    if missing_cols:
+        st.error(f"Kolom berikut tidak ditemukan: {missing_cols}")
+        st.stop()
+
+    # Konversi MaritalStatus menjadi one-hot encoding
+    df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
+
+    # Tambahkan kolom dummy jika tidak ada
+    all_marital_statuses = ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]
+    for status in all_marital_statuses:
+        if status not in df.columns:
+            df[status] = 0  # Tambahkan kolom dengan nilai 0
+
+    # Pastikan semua kolom yang diperlukan ada
     final_features = [
         "EmployeeID", "TotalWorkHours", "DistanceFromHome", "Age",
         "TotalWorkingYears", "YearsPerPromotion", "YearsWithCurrManager",
@@ -25,29 +49,14 @@ if uploaded_file is not None:
         "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
     ]
 
-    # Cek apakah semua kolom ada
-    missing_cols = [col for col in final_features if col not in df.columns]
-    if missing_cols:
-        st.error(f"Kolom berikut tidak ditemukan: {missing_cols}")
-        st.stop()
-
-    # Konversi MaritalStatus menjadi one-hot encoding jika belum ada
-    if "MaritalStatus" in df.columns:
-        df = pd.get_dummies(df, columns=["MaritalStatus"], drop_first=False)
-
-    # Tambahkan kolom dummy jika tidak ada
-    for status in ["MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"]:
-        if status not in df.columns:
-            df[status] = 0
+    # Tambahkan kolom yang hilang dengan nilai 0
+    for col in final_features:
+        if col not in df.columns:
+            df[col] = 0
 
     # Pisahkan fitur dan hapus EmployeeID sebelum prediksi
     df_selected = df[final_features].copy()
     df_selected = df_selected.drop(columns=["EmployeeID"])
-
-    # Pastikan urutan dan nama fitur konsisten
-    st.write("Kolom di DataFrame Setelah Penyesuaian:", df_selected.columns.tolist())
-    st.write("Jumlah Fitur di Input:", df_selected.shape[1])
-    st.write("Jumlah Fitur di Model:", model.n_features_in_)
 
     # Prediksi
     predictions = model.predict(df_selected)
@@ -62,6 +71,7 @@ if uploaded_file is not None:
     # Download hasil prediksi
     excel_output = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
+
 
 
 
