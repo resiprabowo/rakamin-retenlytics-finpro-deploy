@@ -48,12 +48,11 @@ if uploaded_file is not None:
         "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
     ]
 
-    # Pisahkan fitur dan hapus EmployeeID sebelum prediksi
+    # Pisahkan fitur dan pertahankan EmployeeID
     df_selected = df[final_features].copy()
-    df_selected = df_selected.drop(columns=["EmployeeID"])
 
     # Prediksi
-    predictions = model.predict(df_selected)
+    predictions = model.predict(df_selected.drop(columns=["EmployeeID"]))
 
     # Tambahkan hasil prediksi
     df["Attrition_Prediction"] = predictions
@@ -65,7 +64,6 @@ if uploaded_file is not None:
     # Download hasil prediksi
     excel_output = df.to_csv(index=False).encode("utf-8")
     st.download_button("Download Hasil", data=excel_output, file_name="prediksi_employee.csv", mime="text/csv")
-
 
 
 
