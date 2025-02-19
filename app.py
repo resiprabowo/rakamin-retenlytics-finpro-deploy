@@ -23,7 +23,7 @@ if uploaded_file is not None:
         "Age", "TotalWorkingYears", "YearsPerPromotion",
         "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
         "NumCompaniesWorked", "TrainingTimesLastYear",
-        "MaritalStatus"
+        "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
     ]
 
     try:
@@ -56,21 +56,7 @@ if uploaded_file is not None:
         df_selected = df_selected.drop(columns=["EmployeeID"])
 
         # Susun ulang sesuai urutan yang diharapkan
-        expected_columns = [
-            "TotalWorkHours", "DistanceFromHome", "Age",
-            "TotalWorkingYears", "YearsPerPromotion",
-            "YearsWithCurrManager", "PerformanceToSatisfactionRatio",
-            "NumCompaniesWorked", "TrainingTimesLastYear",
-            "MaritalStatus_Divorced", "MaritalStatus_Married", "MaritalStatus_Single"
-        ]
-
-        # Tambahkan kolom yang hilang dengan nilai 0
-        for col in expected_columns:
-            if col not in df_selected.columns:
-                df_selected[col] = 0
-
-        # Susun ulang sesuai urutan yang diharapkan
-        df_selected = df_selected[expected_columns]
+        df_selected = df_selected[selected_features[1:]]  # Menghilangkan EmployeeID
 
         # Debugging: Cek apakah kolom sudah sesuai
         st.write("Kolom di DataFrame Setelah Penyesuaian:", df_selected.columns.tolist())
@@ -93,6 +79,7 @@ if uploaded_file is not None:
 
     except Exception as e:
         st.error(f"Terjadi kesalahan: {e}")
+
 
 
 
